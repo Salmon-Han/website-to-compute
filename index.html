@@ -1,56 +1,1204 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-TW">
 <head>
-  <!-- 
-      This is an HTML comment
-      You can write text in a comment and the content won't be visible in the page
-    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>關東自駕遊 2025</title>
+    
+    <!-- Tailwind CSS (樣式庫) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 設定 Import Map，讓瀏覽器知道去哪裡抓 React 和 Lucide 圖示庫 -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.344.0"
+      }
+    }
+    </script>
 
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="https://glitch.com/favicon.ico" />
+    <!-- Babel (讓瀏覽器看懂 JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!--
-      This is the page head - it contains info the browser uses
-      Like the title, which appears on the browser tab but not inside the page
-      Further down you'll see the content that displays in the page
-    -->
-  <title>Hello World!</title>
-
-  <!-- The website stylesheet -->
-  <link rel="stylesheet" href="/style.css" />
-
-  <!-- The website JavaScript file -->
-  <script src="/script.js" defer></script>
+    <style>
+        /* 隱藏卷軸但保留功能 */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.2s ease-out;
+        }
+        body {
+            background-color: #f9fafb; /* gray-50 */
+        }
+    </style>
 </head>
-
 <body>
-  <!--
-      The body includes the content you see in the page
-      Each element is defined using tags, like this <div></div>
-      The attributes like class="wrapper" let us style elements in the CSS
-    -->
-  <div class="wrapper">
-    <div class="content" role="main">
-      <h1 class="title">Oh hi website!</h1>
-      <img src="/cool-website.svg" class="illustration" alt="cool website" />
-      <div class="instructions">
-        <p>
-          Fork <a href="https://github.com/glitchdotcom/website-to-compute">this project</a> and open it in a GitHub Codespace.
-        </p>
-        <p> Follow the steps in the README to deploy your new website to Fastly in a few steps!
-        </p>
+    <div id="root"></div>
 
-      </div>
+    <!-- 這裡開始是 React 程式碼 -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { 
+          Car, MapPin, Calendar, CheckSquare, Navigation, Info, Fuel, 
+          AlertTriangle, Edit2, Save, Sparkles, Plus, Trash2, Image as ImageIcon, 
+          X, Clock, Map as MapIcon, Route, Wallet, ShoppingBag, DollarSign, 
+          Utensils, Train, Gift, Search, Camera
+        } from 'lucide-react';
 
-      <footer class="footer">
-        <div>
-          <a class="remix" href="https://github.com/glitchdotcom/website-to-compute">🚧 Get your own site</a>
-        </div>
-      </footer>
-    </div>
-  </div>
+        const App = () => {
+          const [activeTab, setActiveTab] = useState('itinerary');
+          const [selectedDay, setSelectedDay] = useState(1);
+          const [isEditing, setIsEditing] = useState(false); // Global edit for itinerary list
+          const [selectedRoute, setSelectedRoute] = useState(null);
+          
+          // Modal specific editing state (Itinerary)
+          const [isModalEditing, setIsModalEditing] = useState(false);
+          const [modalEditData, setModalEditData] = useState({ image: '', note: '', desc: '', noteImage: '' });
+
+          // --- 購物清單 State ---
+          const [newShoppingItem, setNewShoppingItem] = useState('');
+          const [shoppingList, setShoppingList] = useState([
+            { id: 1, text: '合利他命', checked: false, image: '', note: '要買大罐的' },
+            { id: 2, text: '東京香蕉 (Tokyo Banana)', checked: false, image: '', note: '機場免稅店買' },
+            { id: 3, text: 'Uniqlo 發熱衣', checked: false, image: '', note: '幫家人代購' },
+          ]);
+          const [selectedShoppingItem, setSelectedShoppingItem] = useState(null);
+          const [shoppingModalData, setShoppingModalData] = useState({ image: '', note: '' });
+          const [isShoppingModalEditing, setIsShoppingModalEditing] = useState(false);
+
+          // --- 行前準備 State ---
+          const [newChecklistItem, setNewChecklistItem] = useState('');
+          const [checklist, setChecklist] = useState([
+            { id: 1, text: '護照 (有效期6個月以上)', checked: true },
+            { id: 2, text: '台灣駕照正本', checked: true },
+            { id: 3, text: '日文駕照譯本 (去監理站申請)', checked: false },
+            { id: 4, text: '預約租車 (確認包含ETC卡)', checked: false },
+            { id: 5, text: '購買旅遊保險', checked: false },
+            { id: 6, text: '申請 Visit Japan Web', checked: false },
+            { id: 7, text: '準備車充/手機架', checked: false },
+          ]);
+
+          // --- 記帳 State ---
+          const [expenses, setExpenses] = useState([
+            { id: 1, title: '租車費用 (預估)', amount: 25000, category: 'transport', day: 1, time: '14:30' },
+            { id: 2, title: '便利商店飲料', amount: 350, category: 'food', day: 1, time: '15:00' },
+          ]);
+          // Editing expense state
+          const [expenseForm, setExpenseForm] = useState({ id: null, title: '', amount: '', category: 'food', time: '' });
+
+          // 初始行程數據
+          const initialItinerary = [
+            {
+              day: 1,
+              title: "抵達東京 & 取車",
+              date: "2025-10-10",
+              routes: [
+                { 
+                  id: 101, 
+                  time: "14:00", 
+                  location: "成田機場", 
+                  note: "辦理入境，前往租車櫃檯取車", 
+                  type: "start", 
+                  image: "https://image.pollinations.ai/prompt/Narita%20Airport%20winter%20japan?width=600&height=400&nologo=true", 
+                  desc: "日本主要國際機場，租車櫃台位於1樓。入境手續約需1小時。",
+                  noteImage: "",
+                  distanceToNext: "45km",
+                  timeToNext: "50分"
+                },
+                { 
+                  id: 102, 
+                  time: "16:00", 
+                  location: "橫濱紅磚倉庫", 
+                  note: "開車適應右駕，欣賞港灣夜景", 
+                  type: "spot", 
+                  image: "https://image.pollinations.ai/prompt/Yokohama%20Red%20Brick%20Warehouse%20winter%20night?width=600&height=400&nologo=true", 
+                  desc: "充滿異國風情的歷史建築，冬季有著名的聖誕市集。",
+                  noteImage: "",
+                  distanceToNext: "2km",
+                  timeToNext: "10分"
+                },
+                { 
+                  id: 103, 
+                  time: "19:00", 
+                  location: "橫濱皇家花園酒店", 
+                  note: "確認飯店停車場位置", 
+                  type: "hotel", 
+                  image: "https://image.pollinations.ai/prompt/Yokohama%20Royal%20Park%20Hotel%20night?width=600&height=400&nologo=true", 
+                  desc: "位於橫濱地標塔內的高空飯店，可俯瞰整個橫濱港灣美景。",
+                  noteImage: "",
+                  distanceToNext: "",
+                  timeToNext: ""
+                }
+              ]
+            },
+            {
+              day: 2,
+              title: "箱根溫泉之旅",
+              date: "2025-10-11",
+              routes: [
+                { 
+                  id: 201, 
+                  time: "09:00", 
+                  location: "海老名SA", 
+                  note: "必吃哈密瓜麵包", 
+                  type: "drive", 
+                  image: "https://image.pollinations.ai/prompt/Ebina%20Service%20Area%20japan?width=600&height=400&nologo=true", 
+                  desc: "日本最著名的高速公路休息站之一。",
+                  noteImage: "",
+                  distanceToNext: "50km",
+                  timeToNext: "60分"
+                },
+                { 
+                  id: 202, 
+                  time: "11:00", 
+                  location: "大涌谷", 
+                  note: "吃黑蛋，看火山地熱", 
+                  type: "spot", 
+                  image: "https://image.pollinations.ai/prompt/Owakudani%20Hakone%20winter%20steam?width=600&height=400&nologo=true", 
+                  desc: "箱根著名的火山地形，特產是延年益壽的黑蛋。",
+                  noteImage: "",
+                  distanceToNext: "5km",
+                  timeToNext: "15分"
+                },
+                { 
+                  id: 203, 
+                  time: "14:00", 
+                  location: "蘆之湖海賊船", 
+                  note: "可將車停在桃源台港", 
+                  type: "spot", 
+                  image: "https://image.pollinations.ai/prompt/Lake%20Ashi%20pirate%20ship%20winter%20fuji?width=600&height=400&nologo=true", 
+                  desc: "搭乘特色海賊船遊湖，天氣好可見富士山。",
+                  noteImage: "",
+                  distanceToNext: "8km",
+                  timeToNext: "20分"
+                },
+                { 
+                  id: 204, 
+                  time: "17:00", 
+                  location: "箱根強羅溫泉", 
+                  note: "享受一泊二食", 
+                  type: "hotel", 
+                  image: "", 
+                  desc: "箱根著名的溫泉區。",
+                  noteImage: "",
+                  distanceToNext: "",
+                  timeToNext: ""
+                }
+              ]
+            },
+            {
+              day: 3,
+              title: "富士山河口湖",
+              date: "2025-10-12",
+              routes: [
+                { 
+                  id: 301, 
+                  time: "09:30", 
+                  location: "御殿場Outlet", 
+                  note: "看富士山逛街，午餐", 
+                  type: "shopping", 
+                  image: "https://image.pollinations.ai/prompt/Gotemba%20Premium%20Outlets%20winter%20fuji?width=600&height=400&nologo=true", 
+                  desc: "日本最大暢貨中心，擁有絕佳富士山景。",
+                  noteImage: "",
+                  distanceToNext: "20km",
+                  timeToNext: "30分"
+                },
+                { 
+                  id: 302, 
+                  time: "14:00", 
+                  location: "忍野八海", 
+                  note: "湧泉名水百選", 
+                  type: "spot", 
+                  image: "https://image.pollinations.ai/prompt/Oshino%20Hakkai%20winter%20snow?width=600&height=400&nologo=true", 
+                  desc: "富士山融雪形成的八個清澈池塘。",
+                  noteImage: "",
+                  distanceToNext: "12km",
+                  timeToNext: "25分"
+                },
+                { 
+                  id: 303, 
+                  time: "16:00", 
+                  location: "河口湖", 
+                  note: "拍攝逆富士 (需早起)", 
+                  type: "spot", 
+                  image: "https://image.pollinations.ai/prompt/Lake%20Kawaguchiko%20winter%20mt%20fuji?width=600&height=400&nologo=true", 
+                  desc: "富士五湖中最著名的景點。",
+                  noteImage: "",
+                  distanceToNext: "",
+                  timeToNext: ""
+                }
+              ]
+            }
+          ];
+
+          const [itinerary, setItinerary] = useState(initialItinerary);
+
+          // Initialize expense form time
+          useEffect(() => {
+            const now = new Date();
+            const timeString = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            setExpenseForm(prev => ({ ...prev, time: timeString }));
+          }, []);
+
+          const getDayOfWeek = (dateString) => {
+            if (!dateString) return '';
+            const days = ['日', '一', '二', '三', '四', '五', '六'];
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            return `(${days[date.getDay()]})`;
+          };
+
+          // --- Checklist Functions ---
+          const toggleCheck = (id) => {
+            setChecklist(checklist.map(item => 
+              item.id === id ? { ...item, checked: !item.checked } : item
+            ));
+          };
+
+          const handleAddChecklistItem = () => {
+            if (!newChecklistItem.trim()) return;
+            setChecklist([...checklist, {
+              id: Date.now(),
+              text: newChecklistItem,
+              checked: false
+            }]);
+            setNewChecklistItem('');
+          };
+
+          const handleDeleteChecklistItem = (id) => {
+            setChecklist(checklist.filter(item => item.id !== id));
+          };
+
+          // --- Shopping List Functions ---
+          const toggleShoppingCheck = (id) => {
+            setShoppingList(shoppingList.map(item => 
+              item.id === id ? { ...item, checked: !item.checked } : item
+            ));
+          };
+
+          const handleAddShoppingItem = () => {
+            if (!newShoppingItem.trim()) return;
+            setShoppingList([...shoppingList, {
+              id: Date.now(),
+              text: newShoppingItem,
+              checked: false,
+              image: '',
+              note: ''
+            }]);
+            setNewShoppingItem('');
+          };
+
+          const handleDeleteShoppingItem = (id) => {
+            setShoppingList(shoppingList.filter(item => item.id !== id));
+          };
+
+          const openShoppingModal = (item) => {
+            setSelectedShoppingItem(item);
+            setShoppingModalData({ image: item.image || '', note: item.note || '' });
+            setIsShoppingModalEditing(false);
+          };
+
+          const saveShoppingModalChanges = () => {
+            if (!selectedShoppingItem) return;
+            setShoppingList(shoppingList.map(item => 
+              item.id === selectedShoppingItem.id 
+                ? { ...item, image: shoppingModalData.image, note: shoppingModalData.note }
+                : item
+            ));
+            setSelectedShoppingItem({ ...selectedShoppingItem, image: shoppingModalData.image, note: shoppingModalData.note });
+            setIsShoppingModalEditing(false);
+          };
+
+          // --- Wallet Functions ---
+          const handleAddOrUpdateExpense = () => {
+            if (!expenseForm.title || !expenseForm.amount) return;
+
+            if (expenseForm.id) {
+              setExpenses(expenses.map(e => e.id === expenseForm.id ? {
+                ...e,
+                title: expenseForm.title,
+                amount: parseInt(expenseForm.amount),
+                category: expenseForm.category,
+                time: expenseForm.time,
+                day: selectedDay
+              } : e));
+            } else {
+              setExpenses([...expenses, {
+                id: Date.now(),
+                title: expenseForm.title,
+                amount: parseInt(expenseForm.amount),
+                category: expenseForm.category,
+                day: selectedDay,
+                time: expenseForm.time
+              }]);
+            }
+            
+            const now = new Date();
+            const timeString = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            setExpenseForm({ id: null, title: '', amount: '', category: 'food', time: timeString });
+          };
+
+          const handleEditExpense = (expense) => {
+            setExpenseForm({
+              id: expense.id,
+              title: expense.title,
+              amount: expense.amount,
+              category: expense.category,
+              time: expense.time || ''
+            });
+          };
+
+          const handleDeleteExpense = (id) => {
+            setExpenses(expenses.filter(item => item.id !== id));
+          };
+
+          const getDailyTotalExpenses = () => {
+            return expenses.filter(e => e.day === selectedDay).reduce((sum, item) => sum + item.amount, 0);
+          };
+
+          const getGrandTotalExpenses = () => {
+            return expenses.reduce((sum, item) => sum + item.amount, 0);
+          };
+
+          const getCategoryIcon = (category) => {
+            switch(category) {
+              case 'food': return <Utensils size={16} className="text-orange-500" />;
+              case 'transport': return <Train size={16} className="text-blue-500" />;
+              case 'shopping': return <Gift size={16} className="text-pink-500" />;
+              default: return <DollarSign size={16} className="text-gray-500" />;
+            }
+          };
+
+          // --- Itinerary Editing ---
+          const handleDayTitleChange = (newTitle) => {
+            const newItinerary = [...itinerary];
+            newItinerary[selectedDay - 1].title = newTitle;
+            setItinerary(newItinerary);
+          };
+
+          const handleDayDateChange = (newDate) => {
+            const newItinerary = [...itinerary];
+            newItinerary[selectedDay - 1].date = newDate;
+            setItinerary(newItinerary);
+          };
+
+          const handleRouteChange = (routeId, field, value) => {
+            const newItinerary = [...itinerary];
+            const dayData = newItinerary[selectedDay - 1];
+            const routeIndex = dayData.routes.findIndex(r => r.id === routeId);
+            if (routeIndex !== -1) {
+              dayData.routes[routeIndex][field] = value;
+              setItinerary(newItinerary);
+            }
+          };
+
+          const handleAddRoute = () => {
+            const newItinerary = [...itinerary];
+            const newId = Date.now();
+            newItinerary[selectedDay - 1].routes.push({
+              id: newId,
+              time: "12:00",
+              location: "新景點",
+              note: "請輸入備註",
+              type: "spot",
+              image: "",
+              desc: "",
+              noteImage: "",
+              distanceToNext: "",
+              timeToNext: ""
+            });
+            setItinerary(newItinerary);
+          };
+
+          const handleDeleteRoute = (routeId) => {
+            const newItinerary = [...itinerary];
+            newItinerary[selectedDay - 1].routes = newItinerary[selectedDay - 1].routes.filter(r => r.id !== routeId);
+            setItinerary(newItinerary);
+          };
+
+          const handleAIGenerate = (routeId, location) => {
+            if (!location) return;
+            const keyword = encodeURIComponent(`${location} japan winter scenery`);
+            const mockImage = `https://image.pollinations.ai/prompt/${keyword}?width=600&height=400&nologo=true`;
+            const mockDesc = `【AI 摘要】${location} 是關東地區熱門的旅遊點，冬季時景色特別優美，建議預留 1-2 小時參觀。`;
+
+            const newItinerary = [...itinerary];
+            const dayData = newItinerary[selectedDay - 1];
+            const routeIndex = dayData.routes.findIndex(r => r.id === routeId);
+            if (routeIndex !== -1) {
+              dayData.routes[routeIndex].image = mockImage;
+              dayData.routes[routeIndex].desc = mockDesc;
+              setItinerary(newItinerary);
+            }
+          };
+
+          // --- Modal Editing ---
+          const openRouteModal = (route) => {
+            setSelectedRoute(route);
+            setIsModalEditing(false);
+            setModalEditData({
+              image: route.image || '',
+              note: route.note || '',
+              desc: route.desc || '',
+              noteImage: route.noteImage || ''
+            });
+          };
+
+          const saveModalChanges = () => {
+            if (!selectedRoute) return;
+            const newItinerary = [...itinerary];
+            const dayData = newItinerary[selectedDay - 1];
+            const routeIndex = dayData.routes.findIndex(r => r.id === selectedRoute.id);
+            
+            if (routeIndex !== -1) {
+              dayData.routes[routeIndex] = {
+                ...dayData.routes[routeIndex],
+                image: modalEditData.image,
+                note: modalEditData.note,
+                desc: modalEditData.desc,
+                noteImage: modalEditData.noteImage
+              };
+              setItinerary(newItinerary);
+              setSelectedRoute(dayData.routes[routeIndex]);
+              setIsModalEditing(false);
+            }
+          };
+
+          const drivingTips = [
+            { title: "右駕行駛", desc: "日本是右駕左行。雨刷和方向燈位置通常與台灣相反（口訣：右轉大彎，左轉小彎）。", icon: <Car className="w-5 h-5 text-blue-500" /> },
+            { title: "ETC 使用", desc: "上高速公路走紫色 'ETC專用' 或綠色 '一般/ETC' 車道。卡片要插緊亮綠燈。速度請降至 20km/h 以下。", icon: <Car className="w-5 h-5 text-purple-500" /> }, 
+            { title: "停車規則", desc: "絕對不能路邊違停。請找 'Coin Parking'。停車後記得鎖車，並記下車位號碼去精算機繳費。", icon: <AlertTriangle className="w-5 h-5 text-red-500" /> },
+            { title: "加油方式", desc: "紅色油槍(Regular)是92/95無鉛。說 'Regular, Full (Mantan)' 即可。自助加油記得先除靜電。", icon: <Fuel className="w-5 h-5 text-orange-500" /> },
+          ];
+
+          const generateGoogleMapsUrl = (dayRoutes) => {
+            if (!dayRoutes || dayRoutes.length < 2) return "https://www.google.com/maps";
+            const origin = encodeURIComponent(dayRoutes[0].location);
+            const destination = encodeURIComponent(dayRoutes[dayRoutes.length - 1].location);
+            const waypoints = dayRoutes.slice(1, -1).map(r => encodeURIComponent(r.location)).join('|');
+            return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
+          };
+
+          // --- Render Components ---
+          const renderHeader = () => (
+            <header className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 pt-8 shadow-lg">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-xl font-bold flex items-center gap-2">
+                    <Car className="w-6 h-6" /> 關東自駕遊 2025
+                  </h1>
+                  <p className="text-blue-100 text-xs mt-1">Ready for the road trip?</p>
+                </div>
+                <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                  <span className="text-xs block text-center">倒數</span>
+                  <span className="font-bold block text-center">320天</span>
+                </div>
+              </div>
+            </header>
+          );
+
+          const renderItinerary = () => {
+            const currentDayData = itinerary[selectedDay - 1];
+            return (
+              <div className="flex flex-col pb-20 relative">
+                <div className="flex overflow-x-auto gap-2 pb-2 mb-2 p-4 scrollbar-hide sticky top-0 bg-gray-50 z-10">
+                  {itinerary.map((day) => (
+                    <button
+                      key={day.day}
+                      onClick={() => setSelectedDay(day.day)}
+                      className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap shadow-sm
+                        ${selectedDay === day.day 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-white text-gray-500 border border-gray-200'}`}
+                    >
+                      Day {day.day}
+                    </button>
+                  ))}
+                  <button className="flex-shrink-0 px-3 py-2 rounded-full bg-gray-100 text-gray-400 border border-gray-200 shadow-sm">
+                    <Plus size={16} />
+                  </button>
+                </div>
+
+                <div className="px-4">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                    <div className="bg-gradient-to-r from-blue-50 to-white p-4 border-b border-blue-100 flex justify-between items-center">
+                       <div className="flex-1">
+                         <div className="text-blue-600 font-bold mb-1 flex items-center gap-2">
+                           <Calendar size={14}/> 
+                           {isEditing ? (
+                             <input 
+                               type="date"
+                               value={currentDayData.date}
+                               onChange={(e) => handleDayDateChange(e.target.value)}
+                               className="bg-white border border-blue-300 rounded px-2 py-0.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
+                             />
+                           ) : (
+                             <span className="text-sm">{currentDayData.date} <span className="text-blue-400">{getDayOfWeek(currentDayData.date)}</span></span>
+                           )}
+                         </div>
+                         {isEditing ? (
+                           <input 
+                             type="text" 
+                             value={currentDayData.title}
+                             onChange={(e) => handleDayTitleChange(e.target.value)}
+                             className="w-full text-lg font-bold bg-white border border-blue-300 rounded px-2 py-1 text-gray-800"
+                           />
+                         ) : (
+                           <h2 className="text-xl font-bold text-gray-800">{currentDayData.title}</h2>
+                         )}
+                       </div>
+                       <button 
+                         onClick={() => setIsEditing(!isEditing)}
+                         className={`p-2 rounded-full transition-colors ${isEditing ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                       >
+                         {isEditing ? <Save size={18} /> : <Edit2 size={18} />}
+                       </button>
+                    </div>
+
+                    <div className="p-4">
+                      <div className="space-y-0 relative">
+                        <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-gray-200"></div>
+                        {currentDayData.routes.map((route, index) => (
+                          <div key={route.id} className="relative pl-10 pb-6 group">
+                            <div className={`absolute left-2.5 top-1.5 w-3 h-3 -ml-1.5 rounded-full border-2 border-white shadow-sm z-10
+                              ${route.type === 'start' ? 'bg-green-500' : 
+                                route.type === 'hotel' ? 'bg-purple-500' : 
+                                route.type === 'drive' ? 'bg-gray-500' : 'bg-blue-500'}`}>
+                            </div>
+
+                            <div 
+                              onClick={() => !isEditing && openRouteModal(route)}
+                              className={`rounded-lg transition-all 
+                                ${isEditing ? 'border border-blue-200 p-3 bg-blue-50/30' : 'cursor-pointer hover:bg-blue-50/50 active:scale-[0.99]'}`}
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                {isEditing ? (
+                                  <div className="w-full space-y-2">
+                                     <div className="flex gap-2">
+                                       <input 
+                                         type="text" 
+                                         value={route.time}
+                                         onChange={(e) => handleRouteChange(route.id, 'time', e.target.value)}
+                                         className="w-20 text-sm border rounded px-1"
+                                       />
+                                       <div className="flex-1 flex gap-1">
+                                         <input 
+                                            type="text" 
+                                            value={route.location}
+                                            onChange={(e) => handleRouteChange(route.id, 'location', e.target.value)}
+                                            className="flex-1 font-bold text-gray-800 border rounded px-1"
+                                          />
+                                          <button 
+                                            onClick={() => handleAIGenerate(route.id, route.location)}
+                                            className="bg-purple-100 text-purple-600 px-2 rounded flex items-center gap-1 text-xs hover:bg-purple-200"
+                                          >
+                                            <Sparkles size={12} />
+                                          </button>
+                                       </div>
+                                     </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                       {route.location}
+                                       {(route.image || route.desc) && <Info size={14} className="text-blue-300" />}
+                                    </h4>
+                                    <span className="text-sm font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{route.time}</span>
+                                  </>
+                                )}
+                              </div>
+                              <div className="mb-1">
+                                 {isEditing ? (
+                                    <textarea 
+                                      value={route.note}
+                                      onChange={(e) => handleRouteChange(route.id, 'note', e.target.value)}
+                                      className="w-full text-sm text-gray-600 border rounded px-1 h-16 mt-1"
+                                      placeholder="輸入備註..."
+                                    />
+                                 ) : (
+                                    <p className="text-gray-600 text-sm line-clamp-2">{route.note}</p>
+                                 )}
+                              </div>
+                              {isEditing && (
+                                <div className="flex justify-end mt-2">
+                                  <button onClick={() => handleDeleteRoute(route.id)} className="text-red-500 bg-white border border-red-200 p-1.5 rounded hover:bg-red-50">
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            {(index < currentDayData.routes.length - 1) && (
+                              <div className="mt-2 mb-2 pl-2">
+                                {isEditing ? (
+                                  <div className="flex gap-2 items-center bg-gray-50 p-2 rounded border border-dashed border-gray-300">
+                                     <Car size={14} className="text-gray-400"/>
+                                     <input placeholder="時間" value={route.timeToNext || ''} onChange={(e) => handleRouteChange(route.id, 'timeToNext', e.target.value)} className="w-20 text-xs border rounded p-1"/>
+                                     <input placeholder="距離" value={route.distanceToNext || ''} onChange={(e) => handleRouteChange(route.id, 'distanceToNext', e.target.value)} className="w-20 text-xs border rounded p-1"/>
+                                  </div>
+                                ) : (
+                                  (route.timeToNext || route.distanceToNext) && (
+                                    <div className="inline-flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200 shadow-sm ml-[-12px] relative z-20">
+                                      <Car size={12} className="text-gray-400" />
+                                      <span className="font-bold text-gray-700">{route.timeToNext || '--分'}</span>
+                                      <span className="w-px h-3 bg-gray-300"></span>
+                                      <span>{route.distanceToNext || '--km'}</span>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {isEditing && (
+                          <button 
+                            onClick={handleAddRoute}
+                            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 flex items-center justify-center gap-2 hover:border-blue-300 hover:text-blue-500 transition-colors ml-4"
+                          >
+                            <Plus size={18} /> 新增行程點
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedRoute && (
+                  <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedRoute(null)}>
+                    <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                       <div className="relative h-48 bg-gray-200 flex-shrink-0">
+                          {modalEditData.image || selectedRoute.image ? (
+                            <img src={isModalEditing ? modalEditData.image : selectedRoute.image} alt={selectedRoute.location} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                              <ImageIcon size={48} className="mb-2 opacity-50"/>
+                              <span className="text-xs">尚無圖片</span>
+                            </div>
+                          )}
+                          
+                          <button onClick={() => setSelectedRoute(null)} className="absolute top-3 right-3 bg-black/30 text-white p-1 rounded-full hover:bg-black/50 backdrop-blur-md z-10"><X size={20} /></button>
+                          
+                          <button 
+                            onClick={() => isModalEditing ? saveModalChanges() : setIsModalEditing(true)} 
+                            className={`absolute top-3 right-12 p-1 rounded-full backdrop-blur-md z-10 transition-colors
+                              ${isModalEditing ? 'bg-green-500 text-white shadow-lg' : 'bg-black/30 text-white hover:bg-black/50'}`}
+                          >
+                            {isModalEditing ? <Save size={20} /> : <Edit2 size={20} />}
+                          </button>
+
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10">
+                            <h3 className="text-white font-bold text-2xl">{selectedRoute.location}</h3>
+                          </div>
+                       </div>
+
+                       <div className="p-5 overflow-y-auto flex-1">
+                         {isModalEditing && (
+                            <div className="mb-4">
+                              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">景點主圖 (URL)</label>
+                              <input 
+                                type="text" 
+                                value={modalEditData.image}
+                                onChange={(e) => setModalEditData({...modalEditData, image: e.target.value})}
+                                className="w-full text-sm border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-200 outline-none"
+                                placeholder="https://..."
+                              />
+                            </div>
+                         )}
+
+                         <div className="mb-4">
+                           <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">我的備註</h4>
+                           {isModalEditing ? (
+                             <div className="space-y-2">
+                               <textarea 
+                                  value={modalEditData.note}
+                                  onChange={(e) => setModalEditData({...modalEditData, note: e.target.value})}
+                                  className="w-full text-sm text-gray-800 bg-gray-50 p-3 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-100 outline-none"
+                                  rows={2}
+                                  placeholder="輸入文字備註..."
+                               />
+                               <div>
+                                  <label className="text-xs text-gray-400 mb-1 block flex items-center gap-1"><ImageIcon size={12}/> 備註圖片 (URL)</label>
+                                  <input 
+                                    type="text" 
+                                    value={modalEditData.noteImage}
+                                    onChange={(e) => setModalEditData({...modalEditData, noteImage: e.target.value})}
+                                    className="w-full text-sm border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-200 outline-none"
+                                    placeholder="貼上您的筆記/參考圖連結..."
+                                  />
+                               </div>
+                             </div>
+                           ) : (
+                             <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                               <p className="text-gray-800 mb-2">{selectedRoute.note || "無備註"}</p>
+                               {selectedRoute.noteImage && (
+                                 <div className="mt-2 rounded-lg overflow-hidden border border-gray-200">
+                                   <img src={selectedRoute.noteImage} alt="User note" className="w-full h-auto" />
+                                 </div>
+                               )}
+                             </div>
+                           )}
+                         </div>
+
+                         <div className="mb-6">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">景點介紹</h4>
+                            {isModalEditing ? (
+                              <textarea 
+                                  value={modalEditData.desc}
+                                  onChange={(e) => setModalEditData({...modalEditData, desc: e.target.value})}
+                                  className="w-full text-sm text-gray-600 p-2 border border-blue-200 rounded focus:ring-2 focus:ring-blue-100 outline-none"
+                                  rows={4}
+                                  placeholder="輸入景點詳細介紹..."
+                              />
+                            ) : (
+                              selectedRoute.desc && <p className="text-sm text-gray-600 leading-relaxed text-justify">{selectedRoute.desc}</p>
+                            )}
+                         </div>
+
+                         {!isModalEditing && (
+                           <button onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${selectedRoute.location}`, '_blank')} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-200 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                             <Navigation size={18} /> 開始導航
+                           </button>
+                         )}
+                       </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          };
+
+          const renderMap = () => {
+            const currentDayData = itinerary[selectedDay - 1];
+            const mapUrl = generateGoogleMapsUrl(currentDayData.routes);
+            return (
+              <div className="flex flex-col pb-20 relative">
+                <div className="bg-white p-4 shadow-sm z-10 sticky top-0">
+                   <h2 className="text-lg font-bold flex items-center gap-2">
+                     <MapIcon className="text-blue-600" /> 行程地圖預覽
+                   </h2>
+                   <div className="flex overflow-x-auto gap-2 py-3 scrollbar-hide">
+                    {itinerary.map((day) => (
+                      <button
+                        key={day.day}
+                        onClick={() => setSelectedDay(day.day)}
+                        className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap
+                          ${selectedDay === day.day 
+                            ? 'bg-blue-600 text-white shadow-md' 
+                            : 'bg-white text-gray-500 border border-gray-200'}`}
+                      >
+                        Day {day.day}
+                      </button>
+                    ))}
+                  </div>
+                 </div>
+                 <div className="p-4">
+                    <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+                       <div className="h-48 bg-gray-200 relative">
+                          <iframe width="100%" height="100%" frameBorder="0" scrolling="no" marginHeight="0" marginWidth="0" src={`https://maps.google.com/maps?q=${encodeURIComponent(currentDayData.routes[0]?.location || 'Tokyo')}&z=12&output=embed`} className="opacity-80"></iframe>
+                       </div>
+                       <div className="p-5">
+                          <h3 className="font-bold text-gray-800 text-lg mb-4 flex items-center gap-2"><Route size={20} className="text-green-500"/> Day {selectedDay} 駕駛路線</h3>
+                          <div className="space-y-0 pl-2">
+                            {currentDayData.routes.map((route, idx) => (
+                              <div key={idx} className="flex gap-3 relative pb-6 last:pb-0">
+                                 {idx !== currentDayData.routes.length - 1 && <div className="absolute left-[9px] top-6 bottom-0 w-0.5 bg-gray-200"></div>}
+                                 <div className={`z-10 w-5 h-5 rounded-full border-4 border-white shadow-sm flex-shrink-0 mt-0.5 ${idx === 0 ? 'bg-green-500' : idx === currentDayData.routes.length - 1 ? 'bg-red-500' : 'bg-blue-500'}`}></div>
+                                 <div className="flex-1">
+                                    <div className="flex justify-between items-start">
+                                      <span className="font-bold text-gray-800 text-sm block">{route.location}</span>
+                                      <button 
+                                        onClick={() => window.open(`https://www.google.com/maps/search/restaurants+near+${route.location}+rating+4.0`, '_blank')}
+                                        className="text-xs bg-red-50 text-red-500 border border-red-100 px-2 py-1 rounded flex items-center gap-1 hover:bg-red-100 transition-colors"
+                                        title="搜尋附近4星以上美食"
+                                      >
+                                        <Utensils size={10} /> 找美食
+                                      </button>
+                                    </div>
+                                    {idx !== currentDayData.routes.length - 1 && (
+                                      <div className="mt-1 flex items-center gap-2 text-xs text-gray-400 bg-gray-50 p-1 rounded w-fit">
+                                        <Car size={12} /> <span>{route.timeToNext || '--'} / {route.distanceToNext || '--'}</span>
+                                      </div>
+                                    )}
+                                 </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-8">
+                            <button onClick={() => window.open(mapUrl, '_blank')} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-200 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                              <MapIcon size={18} /> 在 Google Maps 開啟完整路線
+                            </button>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+            );
+          };
+
+          const renderWallet = () => (
+            <div className="flex flex-col pb-20">
+              <div className="bg-green-600 p-4 text-white shadow-lg z-10 sticky top-0 flex justify-between items-end">
+                <div>
+                  <h2 className="text-xs opacity-80 mb-1 flex items-center gap-1"><Wallet size={14}/> 行程總支出</h2>
+                  <div className="text-2xl font-bold font-mono">¥{getGrandTotalExpenses().toLocaleString()}</div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs opacity-80 mb-1">Day {selectedDay} 小計</p>
+                  <div className="text-xl font-bold font-mono bg-green-700/50 px-2 py-1 rounded">¥{getDailyTotalExpenses().toLocaleString()}</div>
+                </div>
+              </div>
+
+              <div className="p-4">
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+                  <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    {expenseForm.id ? <Edit2 size={16}/> : <Plus size={16}/>} 
+                    {expenseForm.id ? '修改消費' : '新增消費'}
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3 mb-3">
+                     <input 
+                       type="text" 
+                       placeholder="項目" 
+                       value={expenseForm.title}
+                       onChange={e => setExpenseForm({...expenseForm, title: e.target.value})}
+                       className="col-span-2 border border-gray-200 rounded p-2 text-sm outline-none focus:border-green-500"
+                     />
+                     <input 
+                       type="time" 
+                       value={expenseForm.time}
+                       onChange={e => setExpenseForm({...expenseForm, time: e.target.value})}
+                       className="border border-gray-200 rounded p-2 text-sm outline-none focus:border-green-500 text-center"
+                     />
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                     <input 
+                       type="number" 
+                       placeholder="金額 (¥)" 
+                       value={expenseForm.amount}
+                       onChange={e => setExpenseForm({...expenseForm, amount: e.target.value})}
+                       className="flex-1 border border-gray-200 rounded p-2 text-sm outline-none focus:border-green-500"
+                     />
+                     <select 
+                       value={expenseForm.category}
+                       onChange={e => setExpenseForm({...expenseForm, category: e.target.value})}
+                       className="border border-gray-200 rounded p-2 text-sm w-24 outline-none"
+                     >
+                       <option value="food">餐飲</option>
+                       <option value="transport">交通</option>
+                       <option value="shopping">購物</option>
+                       <option value="other">其他</option>
+                     </select>
+                  </div>
+                  <button 
+                    onClick={handleAddOrUpdateExpense}
+                    className={`w-full py-2 rounded font-bold text-white shadow-sm transition-colors
+                      ${expenseForm.id ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-600 hover:bg-green-700'}`}
+                  >
+                    {expenseForm.id ? '更新紀錄' : '新增紀錄'}
+                  </button>
+                  {expenseForm.id && (
+                     <button 
+                       onClick={() => {
+                         const now = new Date();
+                         setExpenseForm({ id: null, title: '', amount: '', category: 'food', time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}` })
+                       }}
+                       className="w-full mt-2 text-xs text-gray-400 hover:text-gray-600"
+                     >
+                       取消修改
+                     </button>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {expenses.filter(e => e.day === selectedDay).length === 0 ? (
+                    <div className="text-center text-gray-400 py-10">今天還沒有消費紀錄</div>
+                  ) : (
+                    expenses.filter(e => e.day === selectedDay)
+                      .sort((a, b) => (a.time > b.time ? 1 : -1)) 
+                      .map((item) => (
+                      <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between group">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100">
+                            {getCategoryIcon(item.category)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-gray-800 flex items-center gap-2">
+                              {item.title}
+                              <span className="text-xs font-normal text-gray-400 bg-gray-100 px-1.5 rounded">{item.time}</span>
+                            </div>
+                            <div className="text-xs text-gray-400 capitalize">{item.category}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono font-bold text-gray-700">¥{item.amount.toLocaleString()}</span>
+                          <div className="flex gap-1">
+                            <button onClick={() => handleEditExpense(item)} className="text-gray-300 hover:text-blue-500 p-1"><Edit2 size={14}/></button>
+                            <button onClick={() => handleDeleteExpense(item.id)} className="text-gray-300 hover:text-red-500 p-1"><Trash2 size={14}/></button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+
+          const renderChecklist = () => (
+            <div className="flex flex-col pb-20 p-4 space-y-6">
+              <div className="space-y-3">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2 text-lg border-b border-gray-200 pb-2">
+                  <CheckSquare size={20} className="text-blue-500" /> 行前準備
+                </h3>
+                
+                <div className="bg-orange-50 p-4 rounded-lg border border-orange-100 mb-2">
+                  <h4 className="font-bold text-orange-800 flex items-center gap-2 text-sm"><AlertTriangle size={14} /> 必備證件</h4>
+                  <p className="text-xs text-orange-700 mt-1">駕照譯本效期與台灣駕照相同，請確認台灣駕照未過期。</p>
+                </div>
+
+                <div className="flex gap-2 mb-2">
+                  <input 
+                    type="text" 
+                    placeholder="新增待辦事項..."
+                    value={newChecklistItem}
+                    onChange={(e) => setNewChecklistItem(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddChecklistItem()}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-300 outline-none"
+                  />
+                  <button 
+                    onClick={handleAddChecklistItem}
+                    className="bg-blue-500 text-white px-3 rounded-lg font-bold text-sm hover:bg-blue-600"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+
+                {checklist.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all group
+                      ${item.checked ? 'bg-gray-50 border-gray-200' : 'bg-white border-blue-100 shadow-sm'}`}
+                  >
+                    <div 
+                      onClick={() => toggleCheck(item.id)}
+                      className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 cursor-pointer
+                      ${item.checked ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-300 bg-white'}`}
+                    >
+                      {item.checked && <CheckSquare size={12} />}
+                    </div>
+                    <span 
+                      onClick={() => toggleCheck(item.id)}
+                      className={`text-sm flex-1 cursor-pointer ${item.checked ? 'text-gray-400 line-through' : 'text-gray-800'}`}
+                    >
+                      {item.text}
+                    </span>
+                    <button 
+                      onClick={() => handleDeleteChecklistItem(item.id)}
+                      className="text-gray-300 hover:text-red-500 p-1"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2 text-lg border-b border-gray-200 pb-2 pt-2">
+                  <ShoppingBag size={20} className="text-pink-500" /> 購物清單
+                </h3>
+
+                <div className="flex gap-2 mb-2">
+                  <input 
+                    type="text" 
+                    placeholder="新增購買項目..."
+                    value={newShoppingItem}
+                    onChange={(e) => setNewShoppingItem(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddShoppingItem()}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-pink-300 outline-none"
+                  />
+                  <button 
+                    onClick={handleAddShoppingItem}
+                    className="bg-pink-500 text-white px-4 rounded-lg font-bold text-sm hover:bg-pink-600"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+
+                {shoppingList.length === 0 ? (
+                   <div className="text-center text-gray-400 text-sm py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                     清單空空的，快去買買買！
+                   </div>
+                ) : (
+                  shoppingList.map((item) => (
+                    <div key={item.id} className="flex items-center gap-2 bg-white p-3 rounded-lg border border-pink-100 shadow-sm">
+                      <div 
+                        onClick={() => toggleShoppingCheck(item.id)}
+                        className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer flex-shrink-0
+                        ${item.checked ? 'bg-pink-500 border-pink-500 text-white' : 'border-gray-300 bg-white'}`}
+                      >
+                        {item.checked && <CheckSquare size={12} />}
+                      </div>
+                      <div 
+                        className="flex-1 cursor-pointer"
+                        onClick={() => openShoppingModal(item)}
+                      >
+                         <div className={`text-sm ${item.checked ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                           {item.text}
+                         </div>
+                         {(item.image || item.note) && (
+                           <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+                             {item.image && <ImageIcon size={10} />}
+                             {item.note && <span className="truncate max-w-[150px]">{item.note}</span>}
+                           </div>
+                         )}
+                      </div>
+                      <button onClick={() => handleDeleteShoppingItem(item.id)} className="text-gray-300 hover:text-red-500 p-1">
+                        <Trash2 size={14}/>
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {selectedShoppingItem && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedShoppingItem(null)}>
+                  <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+                     <div className="bg-pink-500 p-4 text-white flex justify-between items-center">
+                       <h3 className="font-bold text-lg flex items-center gap-2"><ShoppingBag size={20}/> {selectedShoppingItem.text}</h3>
+                       <div className="flex gap-2">
+                         <button onClick={() => isShoppingModalEditing ? saveShoppingModalChanges() : setIsShoppingModalEditing(true)} className="p-1 hover:bg-pink-600 rounded">
+                           {isShoppingModalEditing ? <Save size={20}/> : <Edit2 size={20}/>}
+                         </button>
+                         <button onClick={() => setSelectedShoppingItem(null)} className="p-1 hover:bg-pink-600 rounded"><X size={20}/></button>
+                       </div>
+                     </div>
+                     
+                     <div className="p-5 space-y-4">
+                       {isShoppingModalEditing ? (
+                         <>
+                           <div>
+                             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">商品圖片 (URL)</label>
+                             <input 
+                               type="text" 
+                               value={shoppingModalData.image}
+                               onChange={(e) => setShoppingModalData({...shoppingModalData, image: e.target.value})}
+                               className="w-full text-sm border border-gray-300 rounded p-2 outline-none focus:border-pink-300"
+                               placeholder="https://..."
+                             />
+                           </div>
+                           <div>
+                             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">備註說明</label>
+                             <textarea 
+                               value={shoppingModalData.note}
+                               onChange={(e) => setShoppingModalData({...shoppingModalData, note: e.target.value})}
+                               className="w-full text-sm border border-gray-300 rounded p-2 outline-none focus:border-pink-300 h-24"
+                               placeholder="例如：要買XL號、紅色、預算5000日圓..."
+                             />
+                           </div>
+                         </>
+                       ) : (
+                         <>
+                           {selectedShoppingItem.image ? (
+                             <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                               <img src={selectedShoppingItem.image} alt={selectedShoppingItem.text} className="w-full h-48 object-cover" />
+                             </div>
+                           ) : (
+                             <div className="h-32 bg-gray-50 rounded-lg border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400">
+                               <Camera size={24} className="mb-1"/>
+                               <span className="text-xs">點擊右上角編輯新增圖片</span>
+                             </div>
+                           )}
+                           <div>
+                             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">詳細備註</h4>
+                             <p className="text-gray-800 bg-gray-50 p-3 rounded-lg border border-gray-100 text-sm min-h-[60px]">
+                               {selectedShoppingItem.note || "尚無備註"}
+                             </p>
+                           </div>
+                         </>
+                       )}
+                     </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+
+          const renderDrivingInfo = () => (
+            <div className="space-y-4 pb-20 p-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 text-center">
+                  <div className="text-2xl font-bold text-red-500">110</div>
+                  <div className="text-xs text-gray-500">火警/救護車</div>
+                </div>
+                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 text-center">
+                  <div className="text-2xl font-bold text-blue-500">110</div>
+                  <div className="text-xs text-gray-500">警察局</div>
+                </div>
+              </div>
+              <h3 className="font-bold text-gray-800 mt-2 px-1">自駕關鍵規則</h3>
+              {drivingTips.map((tip, index) => (
+                <div key={index} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex gap-4">
+                  <div className="flex-shrink-0 mt-1 bg-gray-50 p-2 rounded-full h-fit">
+                    {tip.icon}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-800">{tip.title}</h4>
+                    <p className="text-sm text-gray-600 mt-1 leading-relaxed">{tip.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+
+          return (
+            <div className="max-w-md mx-auto h-screen bg-gray-50 flex flex-col font-sans text-gray-900 overflow-hidden shadow-2xl">
+              <main className="flex-1 overflow-y-auto scrollbar-hide">
+                {renderHeader()}
+                {activeTab === 'itinerary' && renderItinerary()}
+                {activeTab === 'map' && renderMap()}
+                {activeTab === 'wallet' && renderWallet()}
+                {activeTab === 'checklist' && renderChecklist()}
+                {activeTab === 'info' && renderDrivingInfo()}
+              </main>
+
+              <nav className="bg-white border-t border-gray-200 flex justify-between items-center px-4 py-2 pb-6 absolute bottom-0 w-full max-w-md shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] text-[10px] z-50">
+                <button onClick={() => setActiveTab('itinerary')} className={`flex flex-col items-center gap-1 ${activeTab === 'itinerary' ? 'text-blue-600' : 'text-gray-400'}`}>
+                  <MapPin size={20} fill={activeTab === 'itinerary' ? "currentColor" : "none"} />
+                  <span className="font-medium">行程</span>
+                </button>
+                <button onClick={() => setActiveTab('map')} className={`flex flex-col items-center gap-1 ${activeTab === 'map' ? 'text-blue-600' : 'text-gray-400'}`}>
+                  <MapIcon size={20} fill={activeTab === 'map' ? "currentColor" : "none"} />
+                  <span className="font-medium">地圖</span>
+                </button>
+                <button onClick={() => setActiveTab('wallet')} className={`flex flex-col items-center gap-1 ${activeTab === 'wallet' ? 'text-green-600' : 'text-gray-400'}`}>
+                  <Wallet size={20} fill={activeTab === 'wallet' ? "currentColor" : "none"} />
+                  <span className="font-medium">記帳</span>
+                </button>
+                <button onClick={() => setActiveTab('checklist')} className={`flex flex-col items-center gap-1 ${activeTab === 'checklist' ? 'text-blue-600' : 'text-gray-400'}`}>
+                  <CheckSquare size={20} fill={activeTab === 'checklist' ? "currentColor" : "none"} />
+                  <span className="font-medium">準備</span>
+                </button>
+                <button onClick={() => setActiveTab('info')} className={`flex flex-col items-center gap-1 ${activeTab === 'info' ? 'text-blue-600' : 'text-gray-400'}`}>
+                  <Navigation size={20} fill={activeTab === 'info' ? "currentColor" : "none"} />
+                  <span className="font-medium">攻略</span>
+                </button>
+              </nav>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
-
 </html>
